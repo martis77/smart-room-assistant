@@ -1,11 +1,21 @@
 # Smart Room Assistant
 
-Projekt inteligentnej miestnosti v Pythone.
+Inteligentná aplikácia pracujúca so senzormi.
 
 ## Funkcie
-- simulácia senzorov
-- teplota
-- hluk
-- svetlo
-- alarm
-- GUI aplikácia
+- simulácia teploty
+- simulácia vlhkosti
+- detekcia hluku
+- inteligentné svetlo
+- detekcia pohybu
+- alarm systém
+- GUI aplikácia v Pythone
+
+## Použité technológie
+- Python
+- Tkinter
+
+## Spustenie
+
+```bash
+python smart_room.py
