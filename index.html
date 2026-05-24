@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Room Dashboard</title>
+  <title>Smart Room AI Dashboard</title>
 
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      background: linear-gradient(135deg, #050f1a, #0b2a3a, #144552);
       color: white;
       text-align: center;
       padding: 20px;
@@ -16,25 +16,26 @@
 
     h1 {
       color: #00ffd5;
-      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    .sub {
+      opacity: 0.7;
       margin-bottom: 20px;
     }
 
     button {
       background: linear-gradient(90deg, #00c9ff, #92fe9d);
       border: none;
-      padding: 12px 25px;
-      color: black;
+      padding: 12px 20px;
       border-radius: 30px;
-      font-size: 16px;
-      cursor: pointer;
       font-weight: bold;
-      transition: 0.3s;
-      margin-bottom: 10px;
+      cursor: pointer;
+      margin: 5px;
     }
 
     button:hover {
-      transform: scale(1.1);
+      transform: scale(1.05);
     }
 
     #status {
@@ -43,20 +44,19 @@
       font-weight: bold;
     }
 
-    .container {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
-      max-width: 900px;
+      max-width: 1000px;
       margin: auto;
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255,255,255,0.08);
       backdrop-filter: blur(10px);
       padding: 20px;
       border-radius: 20px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
       transition: 0.3s;
     }
 
@@ -64,112 +64,124 @@
       transform: scale(1.05);
     }
 
-    .title {
-      font-size: 18px;
-      margin-bottom: 10px;
-      opacity: 0.9;
-    }
-
     .value {
-      font-size: 34px;
-      font-weight: bold;
+      font-size: 32px;
       color: #00ffd5;
+      font-weight: bold;
     }
 
-    .emoji {
-      font-size: 24px;
+    .alert {
+      color: #ff4d4d;
+      font-weight: bold;
+    }
+
+    canvas {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      margin-top: 20px;
     }
   </style>
 </head>
-
 <body>
 
-  <h1>SMART ROOM DASHBOARD</h1>
+  <h1>SMART ROOM AI DASHBOARD</h1>
+  <div class="sub">IoT simulácia + Arduino + AI automatizácia</div>
 
   <button onclick="connectArduino()">🔌 Pripojiť Arduino</button>
+  <button onclick="toggleAI()">🤖 AI režim</button>
+
   <div id="status">Arduino nepripojené</div>
 
-  <div class="container">
-
-    <div class="card">
-      <div class="emoji">🌡️</div>
-      <div class="title">Teplota</div>
-      <div class="value" id="temp">-- °C</div>
-    </div>
-
-    <div class="card">
-      <div class="emoji">💧</div>
-      <div class="title">Vlhkosť</div>
-      <div class="value" id="humidity">-- %</div>
-    </div>
-
-    <div class="card">
-      <div class="emoji">🔊</div>
-      <div class="title">Hluk</div>
-      <div class="value" id="noise">-- dB</div>
-    </div>
-
-    <div class="card">
-      <div class="emoji">💡</div>
-      <div class="title">Svetlo</div>
-      <div class="value" id="light">-- %</div>
-    </div>
-
+  <div class="grid">
+    <div class="card">🌡️<br>Teplota<br><div class="value" id="temp">--</div></div>
+    <div class="card">💧<br>Vlhkosť<br><div class="value" id="hum">--</div></div>
+    <div class="card">🔊<br>Hluk<br><div class="value" id="noise">--</div></div>
+    <div class="card">💡<br>Svetlo<br><div class="value" id="light">--</div></div>
   </div>
 
-  <script>
-    async function connectArduino() {
-      try {
-        const port = await navigator.serial.requestPort();
-        await port.open({ baudRate: 9600 });
+  <div class="card" style="max-width:1000px;margin:20px auto;">
+    <h3>📈 História teploty</h3>
+    <canvas id="chart" width="900" height="200"></canvas>
+  </div>
 
-        document.getElementById("status").innerText =
-          "🟢 Arduino pripojené";
+  <div class="card" id="aiBox" style="max-width:1000px;margin:auto;">
+    🤖 AI: čakám na dáta...
+  </div>
 
-        const decoder = new TextDecoderStream();
-        port.readable.pipeTo(decoder.writable);
-        const reader = decoder.readable.getReader();
+<script>
+let ai = false;
+let tempHistory = [];
 
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          if (value) parseData(value);
-        }
+function toggleAI() {
+  ai = !ai;
+  document.getElementById("aiBox").innerText = ai ? "🤖 AI zapnuté" : "🤖 AI vypnuté";
+}
 
-      } catch (err) {
-        document.getElementById("status").innerText =
-          "❌ Chyba pripojenia";
+async function connectArduino() {
+  try {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+    document.getElementById("status").innerText = "🟢 Arduino pripojené";
+
+    const decoder = new TextDecoderStream();
+    port.readable.pipeTo(decoder.writable);
+    const reader = decoder.readable.getReader();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) parseData(value);
+    }
+
+  } catch (e) {
+    document.getElementById("status").innerText = "❌ chyba pripojenia";
+  }
+}
+
+function parseData(data) {
+  data.split("\n").forEach(line => {
+    line = line.trim();
+
+    if (line.startsWith("TEMP:")) {
+      let t = Number(line.replace("TEMP:", ""));
+      document.getElementById("temp").innerText = t;
+
+      tempHistory.push(t);
+      if (tempHistory.length > 20) tempHistory.shift();
+
+      drawChart();
+
+      if (ai && t > 28) {
+        document.getElementById("aiBox").innerHTML = "🔥 AI: zapínam chladenie";
       }
     }
 
-    function parseData(data) {
-      const lines = data.split("\n");
+    if (line.startsWith("HUM:")) document.getElementById("hum").innerText = line.replace("HUM:", "");
+    if (line.startsWith("NOISE:")) document.getElementById("noise").innerText = line.replace("NOISE:", "");
+    if (line.startsWith("LIGHT:")) document.getElementById("light").innerText = line.replace("LIGHT:", "");
+  });
+}
 
-      lines.forEach(line => {
-        line = line.trim();
+function drawChart() {
+  const c = document.getElementById("chart");
+  const ctx = c.getContext("2d");
 
-        if (line.startsWith("TEMP:")) {
-          document.getElementById("temp").innerText =
-            line.replace("TEMP:", "") + " °C";
-        }
+  ctx.clearRect(0,0,c.width,c.height);
 
-        if (line.startsWith("HUM:")) {
-          document.getElementById("humidity").innerText =
-            line.replace("HUM:", "") + " %";
-        }
+  ctx.beginPath();
+  ctx.strokeStyle = "#00ffd5";
 
-        if (line.startsWith("NOISE:")) {
-          document.getElementById("noise").innerText =
-            line.replace("NOISE:", "") + " dB";
-        }
+  tempHistory.forEach((v,i) => {
+    let x = i * 40;
+    let y = 200 - v * 5;
+    if (i === 0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
 
-        if (line.startsWith("LIGHT:")) {
-          document.getElementById("light").innerText =
-            line.replace("LIGHT:", "") + " %";
-        }
-      });
-    }
-  </script>
+  ctx.stroke();
+}
+</script>
 
 </body>
 </html>
+
