@@ -8,48 +8,76 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #1e1e1e;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
       color: white;
       text-align: center;
       padding: 20px;
     }
 
-    .card {
-      background: #2a2a2a;
-      margin: 15px auto;
-      padding: 20px;
-      border-radius: 15px;
-      width: 300px;
-    }
-
     h1 {
-      color: #00ffcc;
-    }
-
-    .value {
-      font-size: 32px;
-      font-weight: bold;
-      margin-top: 10px;
+      color: #00ffd5;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
     }
 
     button {
-      background: #00aa88;
+      background: linear-gradient(90deg, #00c9ff, #92fe9d);
       border: none;
-      padding: 12px 20px;
-      color: white;
-      border-radius: 10px;
+      padding: 12px 25px;
+      color: black;
+      border-radius: 30px;
       font-size: 16px;
       cursor: pointer;
-      margin-top: 20px;
+      font-weight: bold;
+      transition: 0.3s;
+      margin-bottom: 10px;
     }
 
     button:hover {
-      background: #00ccaa;
+      transform: scale(1.1);
     }
 
     #status {
-      margin-top: 15px;
-      color: #ffaa00;
+      margin: 10px;
+      color: #ffd166;
+      font-weight: bold;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .title {
+      font-size: 18px;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+
+    .value {
+      font-size: 34px;
+      font-weight: bold;
+      color: #00ffd5;
+    }
+
+    .emoji {
+      font-size: 24px;
     }
   </style>
 </head>
@@ -58,28 +86,35 @@
 
   <h1>SMART ROOM DASHBOARD</h1>
 
-  <button onclick="connectArduino()">Pripojiť Arduino</button>
-
+  <button onclick="connectArduino()">🔌 Pripojiť Arduino</button>
   <div id="status">Arduino nepripojené</div>
 
-  <div class="card">
-    <h2>Teplota</h2>
-    <div class="value" id="temp">-- °C</div>
-  </div>
+  <div class="container">
 
-  <div class="card">
-    <h2>Vlhkosť</h2>
-    <div class="value" id="humidity">-- %</div>
-  </div>
+    <div class="card">
+      <div class="emoji">🌡️</div>
+      <div class="title">Teplota</div>
+      <div class="value" id="temp">-- °C</div>
+    </div>
 
-  <div class="card">
-    <h2>Hluk</h2>
-    <div class="value" id="noise">-- dB</div>
-  </div>
+    <div class="card">
+      <div class="emoji">💧</div>
+      <div class="title">Vlhkosť</div>
+      <div class="value" id="humidity">-- %</div>
+    </div>
 
-  <div class="card">
-    <h2>Svetlo</h2>
-    <div class="value" id="light">-- %</div>
+    <div class="card">
+      <div class="emoji">🔊</div>
+      <div class="title">Hluk</div>
+      <div class="value" id="noise">-- dB</div>
+    </div>
+
+    <div class="card">
+      <div class="emoji">💡</div>
+      <div class="title">Svetlo</div>
+      <div class="value" id="light">-- %</div>
+    </div>
+
   </div>
 
   <script>
@@ -88,29 +123,22 @@
         const port = await navigator.serial.requestPort();
         await port.open({ baudRate: 9600 });
 
-        document.getElementById("status").innerText = "Arduino pripojené";
+        document.getElementById("status").innerText =
+          "🟢 Arduino pripojené";
 
         const decoder = new TextDecoderStream();
         port.readable.pipeTo(decoder.writable);
-
         const reader = decoder.readable.getReader();
 
         while (true) {
           const { value, done } = await reader.read();
-
-          if (done) {
-            reader.releaseLock();
-            break;
-          }
-
-          if (value) {
-            parseData(value);
-          }
+          if (done) break;
+          if (value) parseData(value);
         }
 
-      } catch (error) {
-        document.getElementById("status").innerText = "Chyba pripojenia";
-        console.error(error);
+      } catch (err) {
+        document.getElementById("status").innerText =
+          "❌ Chyba pripojenia";
       }
     }
 
