@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Room Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #2a2a2a;
+      margin: 15px auto;
+      padding: 20px;
+      border-radius: 15px;
+      width: 300px;
+    }
+
+    h1 {
+      color: #00ffcc;
+    }
+
+    .value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    button {
+      background: #00aa88;
+      border: none;
+      padding: 12px 20px;
+      color: white;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background: #00ccaa;
+    }
+
+    #status {
+      margin-top: 15px;
+      color: #ffaa00;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>SMART ROOM DASHBOARD</h1>
+
+  <button onclick="connectArduino()">Pripojiť Arduino</button>
+
+  <div id="status">Arduino nepripojené</div>
+
+  <div class="card">
+    <h2>Teplota</h2>
+    <div class="value" id="temp">-- °C</div>
+  </div>
+
+  <div class="card">
+    <h2>Vlhkosť</h2>
+    <div class="value" id="humidity">-- %</div>
+  </div>
+
+  <div class="card">
+    <h2>Hluk</h2>
+    <div class="value" id="noise">-- dB</div>
+  </div>
+
+  <div class="card">
+    <h2>Svetlo</h2>
+    <div class="value" id="light">-- %</div>
+  </div>
+
+  <script>
+    async function connectArduino() {
+      try {
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 9600 });
+
+        document.getElementById("status").innerText = "Arduino pripojené";
+
+        const decoder = new TextDecoderStream();
+        port.readable.pipeTo(decoder.writable);
+
+        const reader = decoder.readable.getReader();
+
+        while (true) {
+          const { value, done } = await reader.read();
+
+          if (done) {
+            reader.releaseLock();
+            break;
+          }
+
+          if (value) {
+            parseData(value);
+          }
+        }
+
+      } catch (error) {
+        document.getElementById("status").innerText = "Chyba pripojenia";
+        console.error(error);
+      }
+    }
+
+    function parseData(data) {
+      const lines = data.split("\n");
+
+      lines.forEach(line => {
+        line = line.trim();
+
+        if (line.startsWith("TEMP:")) {
+          document.getElementById("temp").innerText =
+            line.replace("TEMP:", "") + " °C";
+        }
+
+        if (line.startsWith("HUM:")) {
+          document.getElementById("humidity").innerText =
+            line.replace("HUM:", "") + " %";
+        }
+
+        if (line.startsWith("NOISE:")) {
+          document.getElementById("noise").innerText =
+            line.replace("NOISE:", "") + " dB";
+        }
+
+        if (line.startsWith("LIGHT:")) {
+          document.getElementById("light").innerText =
+            line.replace("LIGHT:", "") + " %";
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
